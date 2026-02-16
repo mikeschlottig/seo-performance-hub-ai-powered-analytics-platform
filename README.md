@@ -1,6 +1,6 @@
 # SEO Performance Hub
 
-[cloudflarebutton]
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/mikeschlottig/seo-performance-hub-ai-powered-analytics-platform)
 
 A full-stack AI-powered SEO analysis and performance optimization hub built on Cloudflare Workers. Leverage advanced AI models, web search tools, and multi-session chat interfaces to analyze websites, generate SEO reports, track performance metrics, and get actionable recommendations—all deployed globally with zero infrastructure management.
 
@@ -112,7 +112,7 @@ Deploy to Cloudflare Workers in seconds:
 3. Custom domain (optional):
    Update `wrangler.jsonc` with `routes` and deploy.
 
-[cloudflarebutton]
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/mikeschlottig/seo-performance-hub-ai-powered-analytics-platform)
 
 Your app will be live at `https://{name}.{account_id}.workers.dev` with global edge network.
 
