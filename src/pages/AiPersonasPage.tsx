@@ -9,31 +9,31 @@ import { chatService } from '@/lib/chat';
 import { useDataStore } from '@/lib/data-store';
 import { toast } from 'sonner';
 const PERSONAS = [
-  { 
-    id: 'strategist', 
-    name: 'SEO Strategist', 
-    description: 'Expert in long-term growth and keyword mapping.', 
+  {
+    id: 'strategist',
+    name: 'SEO Strategist',
+    description: 'Expert in long-term growth and keyword mapping.',
     icon: BrainCircuit,
     prompt: "You are an SEO Strategist. Analyze data for long-term growth, focusing on topical authority and keyword clusters."
   },
-  { 
-    id: 'tech-auditor', 
-    name: 'Technical Auditor', 
-    description: 'Deep dive into CWV, indexing, and crawl budget.', 
+  {
+    id: 'tech-auditor',
+    name: 'Technical Auditor',
+    description: 'Deep dive into CWV, indexing, and crawl budget.',
     icon: UserCog,
     prompt: "You are a Technical SEO Auditor. Focus on site speed, indexing issues, canonicalization, and technical debt."
   },
-  { 
-    id: 'content-writer', 
-    name: 'Content Optimizer', 
-    description: 'Refining copy for both humans and semantic search.', 
+  {
+    id: 'content-writer',
+    name: 'Content Optimizer',
+    description: 'Refining copy for both humans and semantic search.',
     icon: Sparkles,
     prompt: "You are a Content Specialist. Focus on search intent, semantic keywords, and improving on-page conversion."
   },
-  { 
-    id: 'competitor-analyst', 
-    name: 'Rival Scout', 
-    description: 'Identifying gaps in your competitors strategies.', 
+  {
+    id: 'competitor-analyst',
+    name: 'Rival Scout',
+    description: 'Identifying gaps in your competitors strategies.',
     icon: Ghost,
     prompt: "You are a Competitive Analyst. Compare user data against market benchmarks to find opportunity gaps."
   },
@@ -44,31 +44,31 @@ export default function AiPersonasPage() {
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollAnchorRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    // Initial greeting and persona context setup
     const initPersona = async () => {
       chatService.newSession();
-      const contextSummary = stagedData.length > 0 
-        ? `Note: I have ${stagedData.length} records of SEO data loaded for your analysis.` 
+      const contextSummary = stagedData.length > 0
+        ? `Note: I have ${stagedData.length} records of SEO data loaded for your analysis.`
         : "";
       setMessages([
-        { role: 'assistant', content: `Hello! I'm your ${activePersona.name}. ${contextSummary} How can I help you today?` }
+        { role: 'assistant', content: `Hello! I'm your ${activePersona.name}. ${contextSummary} How can I help you today?`, id: 'init' }
       ]);
-      // Set system prompt on agent
-      await fetch(`/api/chat/${chatService.getSessionId()}/system-prompt`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: `${activePersona.prompt}\n\nContext Data: ${JSON.stringify(stagedData.slice(0, 10))}` })
-      });
+      try {
+        await fetch(`/api/chat/${chatService.getSessionId()}/system-prompt`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: `${activePersona.prompt}\n\nContext Data: ${JSON.stringify(stagedData.slice(0, 10))}` })
+        });
+      } catch (err) {
+        console.error("Failed to set persona context", err);
+      }
     };
     initPersona();
   }, [activePersona, stagedData]);
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTo(0, scrollRef.current.scrollHeight);
-    }
-  }, [messages]);
+    scrollAnchorRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isTyping]);
   const handleSend = async () => {
     if (!input.trim() || isTyping) return;
     const userMsg = { role: 'user', content: input, id: crypto.randomUUID() };
@@ -134,20 +134,21 @@ export default function AiPersonasPage() {
           </div>
         </CardHeader>
         <CardContent className="flex-1 overflow-hidden p-0 relative flex flex-col">
-          <ScrollArea className="flex-1 p-6" viewportRef={scrollRef}>
+          <ScrollArea className="flex-1 p-6">
             <div className="space-y-6">
               {messages.map((m) => (
-                <div key={m.id || m.content} className={cn("flex", m.role === 'user' ? "justify-end" : "justify-start")}>
+                <div key={m.id} className={cn("flex", m.role === 'user' ? "justify-end" : "justify-start")}>
                   <div className={cn(
-                    "max-w-[85%] rounded-2xl px-5 py-3 text-sm shadow-sm",
+                    "max-w-[85%] rounded-2xl px-5 py-3 text-sm shadow-sm leading-relaxed",
                     m.role === 'user'
                       ? "bg-primary text-primary-foreground font-medium rounded-tr-none"
-                      : "bg-slate-800 text-slate-100 rounded-tl-none border border-slate-700"
+                      : "bg-slate-800 text-slate-100 rounded-tl-none border border-slate-700 whitespace-pre-wrap"
                   )}>
                     {m.content || (m.role === 'assistant' && <Loader2 className="h-4 w-4 animate-spin" />)}
                   </div>
                 </div>
               ))}
+              <div ref={scrollAnchorRef} className="h-1" />
             </div>
           </ScrollArea>
           <div className="p-6 border-t border-slate-800 bg-slate-900/50">

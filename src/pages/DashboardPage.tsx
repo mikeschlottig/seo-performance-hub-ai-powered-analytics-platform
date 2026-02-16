@@ -1,15 +1,42 @@
-import React from 'react';
-import { 
-  LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
+import React, { useMemo } from 'react';
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
-import { TrendingUp, MousePointer2, Eye, BarChart as ChartIcon, Zap } from 'lucide-react';
+import { TrendingUp, MousePointer2, Eye, Zap } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { trafficData, dashboardMetrics } from '@/lib/mockData';
+import { useDataStore } from '@/lib/data-store';
 export default function DashboardPage() {
+  const stagedData = useDataStore(s => s.stagedData);
+  const calculatedMetrics = useMemo(() => {
+    if (!stagedData || stagedData.length === 0) return dashboardMetrics;
+    let totalClicks = 0;
+    let totalImpressions = 0;
+    let avgPos = 0;
+    let count = 0;
+    stagedData.forEach(row => {
+      const clicks = Number(row.Clicks || row.clicks || 0);
+      const impressions = Number(row.Impressions || row.impressions || 0);
+      const pos = Number(row.Position || row.position || row.avg_pos || 0);
+      if (!isNaN(clicks)) totalClicks += clicks;
+      if (!isNaN(impressions)) totalImpressions += impressions;
+      if (!isNaN(pos) && pos > 0) {
+        avgPos += pos;
+        count++;
+      }
+    });
+    const formatNum = (num: number) => num >= 1000000 ? `${(num / 1000000).toFixed(1)}M` : num >= 1000 ? `${(num / 1000).toFixed(1)}k` : num.toString();
+    return [
+      { label: 'Total Clicks', value: formatNum(totalClicks), change: '+Imported' },
+      { label: 'Impressions', value: formatNum(totalImpressions), change: '+Imported' },
+      { label: 'Avg. Position', value: count > 0 ? (avgPos / count).toFixed(1) : '0', change: 'Live' },
+      { label: 'Domain Rating', value: '72', change: '+2' },
+    ];
+  }, [stagedData]);
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {dashboardMetrics.map((metric) => (
+        {calculatedMetrics.map((metric) => (
           <Card key={metric.label} className="border-slate-800 bg-slate-900/30">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-2">
@@ -23,7 +50,7 @@ export default function DashboardPage() {
               </div>
               <div className="flex items-baseline gap-2">
                 <h3 className="text-2xl font-bold text-foreground">{metric.value}</h3>
-                <span className={`text-xs font-medium ${metric.change.startsWith('+') ? 'text-emerald-500' : 'text-rose-500'}`}>
+                <span className={`text-xs font-medium ${metric.change.startsWith('-') ? 'text-rose-500' : 'text-emerald-500'}`}>
                   {metric.change}
                 </span>
               </div>
@@ -36,13 +63,7 @@ export default function DashboardPage() {
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle className="text-xl">Organic Traffic Trend</CardTitle>
-              <p className="text-sm text-muted-foreground">Historical performance over the last 30 days</p>
-            </div>
-            <div className="flex gap-2">
-              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800 text-xs text-slate-300">
-                <div className="h-2 w-2 rounded-full bg-primary" />
-                Organic Clicks
-              </div>
+              <p className="text-sm text-muted-foreground">Performance visualization based on active dataset</p>
             </div>
           </CardHeader>
           <CardContent className="h-[400px]">
@@ -55,32 +76,32 @@ export default function DashboardPage() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                <XAxis 
-                  dataKey="date" 
-                  stroke="#64748b" 
-                  fontSize={12} 
-                  tickLine={false} 
+                <XAxis
+                  dataKey="date"
+                  stroke="#64748b"
+                  fontSize={12}
+                  tickLine={false}
                   axisLine={false}
                   tickFormatter={(val) => val.split('-').slice(1).join('/')}
                 />
-                <YAxis 
-                  stroke="#64748b" 
-                  fontSize={12} 
-                  tickLine={false} 
+                <YAxis
+                  stroke="#64748b"
+                  fontSize={12}
+                  tickLine={false}
                   axisLine={false}
                   tickFormatter={(val) => `${val/1000}k`}
                 />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', color: '#f8fafc' }}
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', color: '#f8fafc', borderRadius: '8px' }}
                   itemStyle={{ color: '#06b6d4' }}
                 />
-                <Area 
-                  type="monotone" 
-                  dataKey="clicks" 
-                  stroke="#06b6d4" 
+                <Area
+                  type="monotone"
+                  dataKey="clicks"
+                  stroke="#06b6d4"
                   strokeWidth={3}
-                  fillOpacity={1} 
-                  fill="url(#colorClicks)" 
+                  fillOpacity={1}
+                  fill="url(#colorClicks)"
                 />
               </AreaChart>
             </ResponsiveContainer>
