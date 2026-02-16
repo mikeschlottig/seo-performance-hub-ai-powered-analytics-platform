@@ -1,72 +1,94 @@
-/* This is a demo sidebar. **COMPULSORY** Edit this file to customize the sidebar OR remove it from appLayout OR don't use appLayout at all */
 import React from "react";
-import { Home, Layers, Compass, Star, Settings, LifeBuoy } from "lucide-react";
+import { 
+  LayoutDashboard, 
+  Building2, 
+  UploadCloud, 
+  Map, 
+  Trophy, 
+  Briefcase, 
+  BarChart2, 
+  Database, 
+  Users,
+  Settings,
+  Search
+} from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { cn } from "@/lib/utils";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
   SidebarHeader,
-  SidebarSeparator,
-  SidebarInput,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarMenuAction,
-  SidebarMenuBadge,
+  SidebarInput,
 } from "@/components/ui/sidebar";
-
+const navItems = [
+  { title: "Dashboard", icon: LayoutDashboard, href: "/" },
+  { title: "Company Profiles", icon: Building2, href: "/companies" },
+  { title: "Import Data", icon: UploadCloud, href: "/import" },
+  { title: "Roadmaps", icon: Map, href: "/roadmaps" },
+  { title: "Top Competitors", icon: Trophy, href: "/competitors" },
+  { title: "Industries", icon: Briefcase, href: "/industries" },
+  { title: "Advanced Analytics", icon: BarChart2, href: "/analytics" },
+  { title: "Knowledge Bases", icon: Database, href: "/knowledge" },
+  { title: "AI Personas", icon: Array.isArray(Users) ? Users : Users, href: "/personas" },
+];
 export function AppSidebar(): JSX.Element {
+  const location = useLocation();
   return (
-    <Sidebar>
-      <SidebarHeader>
-        <div className="flex items-center gap-2 px-2 py-1">
-          <div className="h-6 w-6 rounded-md bg-gradient-to-br from-indigo-500 to-purple-500" />
-          <span className="text-sm font-medium">Demo Sidebar</span>
+    <Sidebar className="border-r border-slate-800/50">
+      <SidebarHeader className="p-4">
+        <div className="flex items-center gap-3 px-2 mb-4">
+          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.5)]">
+            <BarChart2 className="h-5 w-5 text-primary-foreground" />
+          </div>
+          <span className="text-lg font-bold tracking-tight text-foreground">SEO Hub</span>
         </div>
-        <SidebarInput placeholder="Search" />
+        <div className="relative group px-2">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+          <SidebarInput placeholder="Quick search..." className="pl-9 bg-slate-900/50 border-slate-800" />
+        </div>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive>
-                <a href="#"><Home /> <span>Home</span></a>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <a href="#"><Layers /> <span>Projects</span></a>
-              </SidebarMenuButton>
-              <SidebarMenuAction>
-                <Star className="size-4" />
-              </SidebarMenuAction>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <a href="#"><Compass /> <span>Explore</span></a>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarGroup>
-
-        <SidebarSeparator />
-
-        <SidebarGroup>
-          <SidebarGroupLabel>Quick Links</SidebarGroupLabel>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <a href="#"><Star /> <span>Starred</span></a>
-              </SidebarMenuButton>
-              <SidebarMenuBadge>5</SidebarMenuBadge>
-            </SidebarMenuItem>
+          <SidebarMenu className="px-2 space-y-1">
+            {navItems.map((item) => (
+              <SidebarMenuItem key={item.href}>
+                <SidebarMenuButton 
+                  asChild 
+                  isActive={location.pathname === item.href}
+                  className={cn(
+                    "transition-all duration-200 hover:bg-slate-800/50",
+                    location.pathname === item.href ? "text-primary font-semibold bg-primary/10" : "text-muted-foreground"
+                  )}
+                >
+                  <Link to={item.href}>
+                    <item.icon className={cn("h-4 w-4", location.pathname === item.href && "text-primary")} />
+                    <span>{item.title}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter>
-        <div className="px-2 text-xs text-muted-foreground">A simple shadcn sidebar</div>
+      <SidebarFooter className="p-4 border-t border-slate-800/50">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton className="text-muted-foreground hover:text-foreground">
+              <Settings className="h-4 w-4" />
+              <span>Settings</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+        <div className="mt-4 px-2 py-3 rounded-lg bg-slate-900/50 border border-slate-800/50">
+          <p className="text-[10px] text-muted-foreground leading-relaxed">
+            Note: Request limits apply to AI servers. Please use responsibly.
+          </p>
+        </div>
       </SidebarFooter>
     </Sidebar>
   );
