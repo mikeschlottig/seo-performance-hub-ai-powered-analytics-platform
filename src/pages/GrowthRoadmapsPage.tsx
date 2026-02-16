@@ -1,7 +1,8 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { CheckCircle2, Clock, Zap, Target, BookOpen, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 const steps = [

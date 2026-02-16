@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Search, Filter, Download, ArrowUpDown, TrendingUp, TrendingDown } from 'lucide-react';
 import { useDataStore } from '@/lib/data-store';
+import { cn } from "@/lib/utils";
 export default function AdvancedAnalyticsPage() {
   const stagedData = useDataStore(s => s.stagedData);
   const [searchTerm, setSearchTerm] = useState('');

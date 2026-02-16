@@ -3,6 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { Trophy, ArrowUpRight, ShieldCheck, Zap } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 const radarData = [
   { subject: 'Traffic', A: 120, B: 110, fullMark: 150 },
   { subject: 'Backlinks', A: 98, B: 130, fullMark: 150 },
