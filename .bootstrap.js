@@ -78,7 +78,8 @@ function updateWranglerJsonc() {
 
 function runSetupCommands() {
     const commands = [
-    "bun add react-dropzone@^14.2.3"
+    "bun add react-dropzone@^14.2.3",
+    "bun add lucide-react clsx tailwind-merge framer-motion"
 ];
     
     if (commands.length === 0) {
