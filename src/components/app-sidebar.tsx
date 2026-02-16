@@ -1,13 +1,13 @@
 import React from "react";
-import { 
-  LayoutDashboard, 
-  Building2, 
-  UploadCloud, 
-  Map, 
-  Trophy, 
-  Briefcase, 
-  BarChart2, 
-  Database, 
+import {
+  LayoutDashboard,
+  Building2,
+  UploadCloud,
+  Map,
+  Trophy,
+  Briefcase,
+  BarChart2,
+  Database,
   Users,
   Settings,
   Search
@@ -34,7 +34,7 @@ const navItems = [
   { title: "Industries", icon: Briefcase, href: "/industries" },
   { title: "Advanced Analytics", icon: BarChart2, href: "/analytics" },
   { title: "Knowledge Bases", icon: Database, href: "/knowledge" },
-  { title: "AI Personas", icon: Array.isArray(Users) ? Users : Users, href: "/personas" },
+  { title: "AI Personas", icon: Users, href: "/personas" },
 ];
 export function AppSidebar(): JSX.Element {
   const location = useLocation();
@@ -57,8 +57,8 @@ export function AppSidebar(): JSX.Element {
           <SidebarMenu className="px-2 space-y-1">
             {navItems.map((item) => (
               <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton 
-                  asChild 
+                <SidebarMenuButton
+                  asChild
                   isActive={location.pathname === item.href}
                   className={cn(
                     "transition-all duration-200 hover:bg-slate-800/50",

@@ -4,12 +4,12 @@ import {
 } from 'recharts';
 import { TrendingUp, MousePointer2, Eye, Zap } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { trafficData, dashboardMetrics } from '@/lib/mockData';
+import { trafficData as mockTrafficData, dashboardMetrics as mockMetrics } from '@/lib/mockData';
 import { useDataStore } from '@/lib/data-store';
 export default function DashboardPage() {
   const stagedData = useDataStore(s => s.stagedData);
   const calculatedMetrics = useMemo(() => {
-    if (!stagedData || stagedData.length === 0) return dashboardMetrics;
+    if (!stagedData || stagedData.length === 0) return mockMetrics;
     let totalClicks = 0;
     let totalImpressions = 0;
     let avgPos = 0;
@@ -33,6 +33,22 @@ export default function DashboardPage() {
       { label: 'Domain Rating', value: '72', change: '+2' },
     ];
   }, [stagedData]);
+  const activeChartData = useMemo(() => {
+    // Attempt to build chart from imported data if it has date-like structure
+    const hasDate = stagedData.length > 0 && stagedData.some(d => d.Date || d.date);
+    if (hasDate) {
+      // Group by date and sort
+      const grouped = stagedData.reduce((acc, curr) => {
+        const d = curr.Date || curr.date;
+        if (!acc[d]) acc[d] = { date: d, clicks: 0, impressions: 0 };
+        acc[d].clicks += Number(curr.Clicks || curr.clicks || 0);
+        acc[d].impressions += Number(curr.Impressions || curr.impressions || 0);
+        return acc;
+      }, {} as Record<string, any>);
+      return Object.values(grouped).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    }
+    return mockTrafficData;
+  }, [stagedData]);
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -50,7 +66,7 @@ export default function DashboardPage() {
               </div>
               <div className="flex items-baseline gap-2">
                 <h3 className="text-2xl font-bold text-foreground">{metric.value}</h3>
-                <span className={`text-xs font-medium ${metric.change.startsWith('-') ? 'text-rose-500' : 'text-emerald-500'}`}>
+                <span className={`text-xs font-medium ${metric.change.includes('-') ? 'text-rose-500' : 'text-emerald-500'}`}>
                   {metric.change}
                 </span>
               </div>
@@ -62,13 +78,15 @@ export default function DashboardPage() {
         <Card className="border-slate-800 bg-slate-900/30">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
-              <CardTitle className="text-xl">Organic Traffic Trend</CardTitle>
-              <p className="text-sm text-muted-foreground">Performance visualization based on active dataset</p>
+              <CardTitle className="text-xl text-foreground">Traffic Performance</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {stagedData.length > 0 ? "Visualizing your imported dataset metrics" : "Visualization of historical performance benchmarks"}
+              </p>
             </div>
           </CardHeader>
           <CardContent className="h-[400px]">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={trafficData}>
+              <AreaChart data={activeChartData}>
                 <defs>
                   <linearGradient id="colorClicks" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3}/>
@@ -79,21 +97,25 @@ export default function DashboardPage() {
                 <XAxis
                   dataKey="date"
                   stroke="#64748b"
-                  fontSize={12}
+                  fontSize={11}
                   tickLine={false}
                   axisLine={false}
-                  tickFormatter={(val) => val.split('-').slice(1).join('/')}
+                  tickFormatter={(val) => {
+                    if (typeof val !== 'string') return '';
+                    return val.includes('-') ? val.split('-').slice(1).join('/') : val;
+                  }}
                 />
                 <YAxis
                   stroke="#64748b"
-                  fontSize={12}
+                  fontSize={11}
                   tickLine={false}
                   axisLine={false}
-                  tickFormatter={(val) => `${val/1000}k`}
+                  tickFormatter={(val) => val >= 1000 ? `${val/1000}k` : val}
                 />
                 <Tooltip
-                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', color: '#f8fafc', borderRadius: '8px' }}
+                  contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px', color: '#f8fafc' }}
                   itemStyle={{ color: '#06b6d4' }}
+                  cursor={{ stroke: '#06b6d4', strokeWidth: 1 }}
                 />
                 <Area
                   type="monotone"
@@ -102,11 +124,17 @@ export default function DashboardPage() {
                   strokeWidth={3}
                   fillOpacity={1}
                   fill="url(#colorClicks)"
+                  animationDuration={1500}
                 />
               </AreaChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
+      </div>
+      <div className="p-4 bg-slate-900/50 border border-slate-800 rounded-lg text-center">
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          Note: Request limits apply to AI servers. Data processed locally before synthesis.
+        </p>
       </div>
     </div>
   );

@@ -46,39 +46,52 @@ export default function AiPersonasPage() {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const scrollAnchorRef = useRef<HTMLDivElement>(null);
+  const lastPersonaId = useRef<string | null>(null);
+  // Handle Persona Switching (Reset Chat)
   useEffect(() => {
+    if (lastPersonaId.current === activePersona.id) return;
     const initPersona = async () => {
       chatService.newSession();
-      const docContext = knowledgeFiles.length > 0 
-        ? `I have access to ${knowledgeFiles.length} strategy documents: ${knowledgeFiles.map(f => f.name).join(', ')}.`
+      lastPersonaId.current = activePersona.id;
+      const docContext = knowledgeFiles.length > 0
+        ? `I have access to ${knowledgeFiles.length} strategy documents.`
         : "";
       const contextSummary = stagedData.length > 0
-        ? `Note: I have ${stagedData.length} records of SEO data loaded for your analysis.`
+        ? `I have ${stagedData.length} records of SEO data loaded.`
         : "";
       setMessages([
-        { 
-          role: 'assistant', 
-          content: `Hello! I'm your ${activePersona.name}. ${contextSummary} ${docContext} How can I help you today?`, 
-          id: 'init' 
+        {
+          role: 'assistant',
+          content: `Hello! I'm your ${activePersona.name}. ${contextSummary} ${docContext} How can I help you today?`,
+          id: 'init'
         }
       ]);
-      const latestSnippet = knowledgeFiles.length > 0 
-        ? `\n\nReference Strategy Snippet: ${knowledgeFiles[knowledgeFiles.length - 1].contentSnippet}`
-        : "";
-      try {
-        await fetch(`/api/chat/${chatService.getSessionId()}/system-prompt`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            prompt: `${activePersona.prompt}\n\nContext Data: ${JSON.stringify(stagedData.slice(0, 10))}${latestSnippet}\n\nUse the strategy context to guide your answers.` 
-          })
-        });
-      } catch (err) {
-        console.error("Failed to set persona context", err);
-      }
+      await updateSystemPrompt();
     };
     initPersona();
-  }, [activePersona, stagedData, knowledgeFiles]);
+  }, [activePersona.id]);
+  // Handle Context Updates (Don't Reset Chat)
+  useEffect(() => {
+    if (messages.length > 0) {
+      updateSystemPrompt();
+    }
+  }, [stagedData.length, knowledgeFiles.length]);
+  const updateSystemPrompt = async () => {
+    const latestSnippet = knowledgeFiles.length > 0
+      ? `\n\nReference Strategy Snippet: ${knowledgeFiles[knowledgeFiles.length - 1].contentSnippet}`
+      : "";
+    try {
+      await fetch(`/api/chat/${chatService.getSessionId()}/system-prompt`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: `${activePersona.prompt}\n\nContext Data: ${JSON.stringify(stagedData.slice(0, 10))}${latestSnippet}\n\nUse the strategy context to guide your answers.`
+        })
+      });
+    } catch (err) {
+      console.error("Failed to update persona context", err);
+    }
+  };
   useEffect(() => {
     scrollAnchorRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
@@ -105,7 +118,7 @@ export default function AiPersonasPage() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 h-[calc(100vh-12rem)]">
       <div className="lg:col-span-1 space-y-4">
-        <h2 className="text-lg font-semibold px-1">Select Persona</h2>
+        <h2 className="text-lg font-semibold px-1 text-foreground">Select Persona</h2>
         <div className="space-y-2">
           {PERSONAS.map((p) => (
             <button
@@ -137,12 +150,12 @@ export default function AiPersonasPage() {
           <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/20 mt-6">
             <div className="flex items-center gap-2 mb-3">
               <BookOpen className="h-4 w-4 text-primary" />
-              <h3 className="text-sm font-bold text-slate-300">Knowledge In-Use</h3>
+              <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider">Context Active</h3>
             </div>
             <div className="space-y-2">
               {knowledgeFiles.map(f => (
-                <div key={f.id} className="text-[10px] text-muted-foreground bg-slate-800/50 p-2 rounded flex items-center gap-2">
-                  <div className="h-1 w-1 rounded-full bg-primary" />
+                <div key={f.id} className="text-[10px] text-muted-foreground bg-slate-800/50 p-2 rounded flex items-center gap-2 truncate">
+                  <div className="h-1 w-1 rounded-full bg-primary shrink-0" />
                   {f.name}
                 </div>
               ))}
@@ -157,8 +170,8 @@ export default function AiPersonasPage() {
               <activePersona.icon className="h-6 w-6 text-primary-foreground" />
             </div>
             <div>
-              <CardTitle className="text-md font-bold">{activePersona.name}</CardTitle>
-              <CardDescription className="text-xs text-primary/80">Context Aware Analysis</CardDescription>
+              <CardTitle className="text-md font-bold text-foreground">{activePersona.name}</CardTitle>
+              <CardDescription className="text-xs text-primary/80">Strategy & Data Context Active</CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -173,7 +186,7 @@ export default function AiPersonasPage() {
                       ? "bg-primary text-primary-foreground font-medium rounded-tr-none"
                       : "bg-slate-800 text-slate-100 rounded-tl-none border border-slate-700 whitespace-pre-wrap"
                   )}>
-                    {m.content || (m.role === 'assistant' && <Loader2 className="h-4 w-4 animate-spin" />)}
+                    {m.content || (m.role === 'assistant' && <Loader2 className="h-4 w-4 animate-spin text-primary" />)}
                   </div>
                 </div>
               ))}
@@ -188,7 +201,7 @@ export default function AiPersonasPage() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                 disabled={isTyping}
-                className="pr-12 bg-slate-800 border-slate-700 focus-visible:ring-primary h-12 text-md"
+                className="pr-12 bg-slate-800 border-slate-700 focus-visible:ring-primary h-12 text-md text-foreground"
               />
               <Button
                 onClick={handleSend}
