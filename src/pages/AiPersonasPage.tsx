@@ -1,31 +1,93 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
-import { Users, Send, Sparkles, BrainCircuit, UserCog, Ghost } from 'lucide-react';
+import { Send, Sparkles, BrainCircuit, UserCog, Ghost, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { chatService } from '@/lib/chat';
+import { useDataStore } from '@/lib/data-store';
+import { toast } from 'sonner';
 const PERSONAS = [
-  { id: 'strategist', name: 'SEO Strategist', description: 'Expert in long-term growth and keyword mapping.', icon: BrainCircuit },
-  { id: 'tech-auditor', name: 'Technical Auditor', description: 'Deep dive into CWV, indexing, and crawl budget.', icon: UserCog },
-  { id: 'content-writer', name: 'Content Optimizer', description: 'Refining copy for both humans and semantic search.', icon: Sparkles },
-  { id: 'competitor-analyst', name: 'Rival Scout', description: 'Identifying gaps in your competitors strategies.', icon: Ghost },
+  { 
+    id: 'strategist', 
+    name: 'SEO Strategist', 
+    description: 'Expert in long-term growth and keyword mapping.', 
+    icon: BrainCircuit,
+    prompt: "You are an SEO Strategist. Analyze data for long-term growth, focusing on topical authority and keyword clusters."
+  },
+  { 
+    id: 'tech-auditor', 
+    name: 'Technical Auditor', 
+    description: 'Deep dive into CWV, indexing, and crawl budget.', 
+    icon: UserCog,
+    prompt: "You are a Technical SEO Auditor. Focus on site speed, indexing issues, canonicalization, and technical debt."
+  },
+  { 
+    id: 'content-writer', 
+    name: 'Content Optimizer', 
+    description: 'Refining copy for both humans and semantic search.', 
+    icon: Sparkles,
+    prompt: "You are a Content Specialist. Focus on search intent, semantic keywords, and improving on-page conversion."
+  },
+  { 
+    id: 'competitor-analyst', 
+    name: 'Rival Scout', 
+    description: 'Identifying gaps in your competitors strategies.', 
+    icon: Ghost,
+    prompt: "You are a Competitive Analyst. Compare user data against market benchmarks to find opportunity gaps."
+  },
 ];
 export default function AiPersonasPage() {
+  const stagedData = useDataStore(s => s.stagedData);
   const [activePersona, setActivePersona] = useState(PERSONAS[0]);
-  const [messages, setMessages] = useState([
-    { role: 'assistant', content: `Hello! I'm your ${activePersona.name}. How can I help you optimize your SEO data today?` }
-  ]);
+  const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState('');
-  const handleSend = () => {
-    if (!input.trim()) return;
-    const userMsg = { role: 'user', content: input };
+  const [isTyping, setIsTyping] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    // Initial greeting and persona context setup
+    const initPersona = async () => {
+      chatService.newSession();
+      const contextSummary = stagedData.length > 0 
+        ? `Note: I have ${stagedData.length} records of SEO data loaded for your analysis.` 
+        : "";
+      setMessages([
+        { role: 'assistant', content: `Hello! I'm your ${activePersona.name}. ${contextSummary} How can I help you today?` }
+      ]);
+      // Set system prompt on agent
+      await fetch(`/api/chat/${chatService.getSessionId()}/system-prompt`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: `${activePersona.prompt}\n\nContext Data: ${JSON.stringify(stagedData.slice(0, 10))}` })
+      });
+    };
+    initPersona();
+  }, [activePersona, stagedData]);
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo(0, scrollRef.current.scrollHeight);
+    }
+  }, [messages]);
+  const handleSend = async () => {
+    if (!input.trim() || isTyping) return;
+    const userMsg = { role: 'user', content: input, id: crypto.randomUUID() };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
-    // Simulate thinking
-    setTimeout(() => {
-      setMessages(prev => [...prev, { role: 'assistant', content: "That's a great question about your SEO performance. Based on the patterns I see, focusing on middle-funnel keyword intent could yield a 20% lift in conversions within 3 months." }]);
-    }, 1000);
+    setIsTyping(true);
+    let streamContent = '';
+    const tempId = crypto.randomUUID();
+    setMessages(prev => [...prev, { role: 'assistant', content: '', id: tempId }]);
+    try {
+      await chatService.sendMessage(input, undefined, (chunk) => {
+        streamContent += chunk;
+        setMessages(prev => prev.map(m => m.id === tempId ? { ...m, content: streamContent } : m));
+      });
+    } catch (err) {
+      toast.error("Failed to get response from AI");
+    } finally {
+      setIsTyping(false);
+    }
   };
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 h-[calc(100vh-12rem)]">
@@ -38,8 +100,8 @@ export default function AiPersonasPage() {
               onClick={() => setActivePersona(p)}
               className={cn(
                 "w-full text-left p-4 rounded-xl border transition-all duration-200 group",
-                activePersona.id === p.id 
-                  ? "bg-primary/10 border-primary shadow-[0_0_15px_rgba(6,182,212,0.1)]" 
+                activePersona.id === p.id
+                  ? "bg-primary/10 border-primary shadow-[0_0_15px_rgba(6,182,212,0.1)]"
                   : "bg-slate-900/50 border-slate-800 hover:border-slate-700"
               )}
             >
@@ -72,35 +134,39 @@ export default function AiPersonasPage() {
           </div>
         </CardHeader>
         <CardContent className="flex-1 overflow-hidden p-0 relative flex flex-col">
-          <ScrollArea className="flex-1 p-6 space-y-6">
-            {messages.map((m, i) => (
-              <div key={i} className={cn("flex mb-6", m.role === 'user' ? "justify-end" : "justify-start")}>
-                <div className={cn(
-                  "max-w-[80%] rounded-2xl px-5 py-3 text-sm shadow-sm",
-                  m.role === 'user' 
-                    ? "bg-primary text-primary-foreground font-medium rounded-tr-none" 
-                    : "bg-slate-800 text-slate-100 rounded-tl-none border border-slate-700"
-                )}>
-                  {m.content}
+          <ScrollArea className="flex-1 p-6" viewportRef={scrollRef}>
+            <div className="space-y-6">
+              {messages.map((m) => (
+                <div key={m.id || m.content} className={cn("flex", m.role === 'user' ? "justify-end" : "justify-start")}>
+                  <div className={cn(
+                    "max-w-[85%] rounded-2xl px-5 py-3 text-sm shadow-sm",
+                    m.role === 'user'
+                      ? "bg-primary text-primary-foreground font-medium rounded-tr-none"
+                      : "bg-slate-800 text-slate-100 rounded-tl-none border border-slate-700"
+                  )}>
+                    {m.content || (m.role === 'assistant' && <Loader2 className="h-4 w-4 animate-spin" />)}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </ScrollArea>
           <div className="p-6 border-t border-slate-800 bg-slate-900/50">
             <div className="relative">
-              <Input 
-                placeholder={`Message ${activePersona.name}...`} 
+              <Input
+                placeholder={`Message ${activePersona.name}...`}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                disabled={isTyping}
                 className="pr-12 bg-slate-800 border-slate-700 focus-visible:ring-primary h-12 text-md"
               />
-              <Button 
+              <Button
                 onClick={handleSend}
-                size="icon" 
+                disabled={isTyping || !input.trim()}
+                size="icon"
                 className="absolute right-1 top-1 h-10 w-10 rounded-lg hover:scale-105 transition-transform"
               >
-                <Send className="h-5 w-5" />
+                {isTyping ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
               </Button>
             </div>
           </div>
