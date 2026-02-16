@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
-import { Send, Sparkles, BrainCircuit, UserCog, Ghost, Loader2 } from 'lucide-react';
+import { Send, Sparkles, BrainCircuit, UserCog, Ghost, Loader2, BookOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { chatService } from '@/lib/chat';
 import { useDataStore } from '@/lib/data-store';
@@ -40,6 +40,7 @@ const PERSONAS = [
 ];
 export default function AiPersonasPage() {
   const stagedData = useDataStore(s => s.stagedData);
+  const knowledgeFiles = useDataStore(s => s.knowledgeFiles);
   const [activePersona, setActivePersona] = useState(PERSONAS[0]);
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState('');
@@ -48,24 +49,36 @@ export default function AiPersonasPage() {
   useEffect(() => {
     const initPersona = async () => {
       chatService.newSession();
+      const docContext = knowledgeFiles.length > 0 
+        ? `I have access to ${knowledgeFiles.length} strategy documents: ${knowledgeFiles.map(f => f.name).join(', ')}.`
+        : "";
       const contextSummary = stagedData.length > 0
         ? `Note: I have ${stagedData.length} records of SEO data loaded for your analysis.`
         : "";
       setMessages([
-        { role: 'assistant', content: `Hello! I'm your ${activePersona.name}. ${contextSummary} How can I help you today?`, id: 'init' }
+        { 
+          role: 'assistant', 
+          content: `Hello! I'm your ${activePersona.name}. ${contextSummary} ${docContext} How can I help you today?`, 
+          id: 'init' 
+        }
       ]);
+      const latestSnippet = knowledgeFiles.length > 0 
+        ? `\n\nReference Strategy Snippet: ${knowledgeFiles[knowledgeFiles.length - 1].contentSnippet}`
+        : "";
       try {
         await fetch(`/api/chat/${chatService.getSessionId()}/system-prompt`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt: `${activePersona.prompt}\n\nContext Data: ${JSON.stringify(stagedData.slice(0, 10))}` })
+          body: JSON.stringify({ 
+            prompt: `${activePersona.prompt}\n\nContext Data: ${JSON.stringify(stagedData.slice(0, 10))}${latestSnippet}\n\nUse the strategy context to guide your answers.` 
+          })
         });
       } catch (err) {
         console.error("Failed to set persona context", err);
       }
     };
     initPersona();
-  }, [activePersona, stagedData]);
+  }, [activePersona, stagedData, knowledgeFiles]);
   useEffect(() => {
     scrollAnchorRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
@@ -120,6 +133,22 @@ export default function AiPersonasPage() {
             </button>
           ))}
         </div>
+        {knowledgeFiles.length > 0 && (
+          <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/20 mt-6">
+            <div className="flex items-center gap-2 mb-3">
+              <BookOpen className="h-4 w-4 text-primary" />
+              <h3 className="text-sm font-bold text-slate-300">Knowledge In-Use</h3>
+            </div>
+            <div className="space-y-2">
+              {knowledgeFiles.map(f => (
+                <div key={f.id} className="text-[10px] text-muted-foreground bg-slate-800/50 p-2 rounded flex items-center gap-2">
+                  <div className="h-1 w-1 rounded-full bg-primary" />
+                  {f.name}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
       <Card className="lg:col-span-3 flex flex-col border-slate-800 bg-slate-900/30 overflow-hidden shadow-2xl">
         <CardHeader className="border-b border-slate-800 py-4 px-6 bg-slate-900/50">
@@ -129,7 +158,7 @@ export default function AiPersonasPage() {
             </div>
             <div>
               <CardTitle className="text-md font-bold">{activePersona.name}</CardTitle>
-              <CardDescription className="text-xs text-primary/80">Active Analysis Session</CardDescription>
+              <CardDescription className="text-xs text-primary/80">Context Aware Analysis</CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -154,7 +183,7 @@ export default function AiPersonasPage() {
           <div className="p-6 border-t border-slate-800 bg-slate-900/50">
             <div className="relative">
               <Input
-                placeholder={`Message ${activePersona.name}...`}
+                placeholder={`Ask ${activePersona.name} about your data...`}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}

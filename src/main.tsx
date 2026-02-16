@@ -18,6 +18,9 @@ import AiPersonasPage from '@/pages/AiPersonasPage';
 import CompetitiveAnalysisPage from '@/pages/CompetitiveAnalysisPage';
 import AdvancedAnalyticsPage from '@/pages/AdvancedAnalyticsPage';
 import GrowthRoadmapsPage from '@/pages/GrowthRoadmapsPage';
+import IndustryInsightsPage from '@/pages/IndustryInsightsPage';
+import KnowledgeBasePage from '@/pages/KnowledgeBasePage';
+import CompanyProfilesPage from '@/pages/CompanyProfilesPage';
 const queryClient = new QueryClient();
 const router = createBrowserRouter([
   {
@@ -31,9 +34,9 @@ const router = createBrowserRouter([
       { path: "/competitors", element: <CompetitiveAnalysisPage /> },
       { path: "/analytics", element: <AdvancedAnalyticsPage /> },
       { path: "/roadmaps", element: <GrowthRoadmapsPage /> },
-      { path: "/companies", element: <div className="p-12 text-center text-muted-foreground bg-slate-900/20 rounded-xl border border-dashed border-slate-800">Company Profiles integration in progress...</div> },
-      { path: "/industries", element: <div className="p-12 text-center text-muted-foreground bg-slate-900/20 rounded-xl border border-dashed border-slate-800">Industry Insights module coming soon...</div> },
-      { path: "/knowledge", element: <div className="p-12 text-center text-muted-foreground bg-slate-900/20 rounded-xl border border-dashed border-slate-800">Knowledge Bases coming soon...</div> },
+      { path: "/companies", element: <CompanyProfilesPage /> },
+      { path: "/industries", element: <IndustryInsightsPage /> },
+      { path: "/knowledge", element: <KnowledgeBasePage /> },
     ]
   },
 ]);
